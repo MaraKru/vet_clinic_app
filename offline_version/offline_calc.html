@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вет Калькулятор (Офлайн)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #E8F5E9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2E7D32;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-left: 5px solid #4CAF50;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .info {
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ccc;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .tab.active {
+            border-bottom: 3px solid #4CAF50;
+            color: #2E7D32;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🐾 Вет Калькулятор</h1>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('inj')">Уколы</div>
+            <div class="tab" onclick="switchTab('inf')">Капельницы</div>
+        </div>
+
+        <!-- Injections tab -->
+        <div id="inj" class="tab-content active">
+            <label>Вид животного:</label>
+            <select id="species">
+                <option value="cat">Кошка</option>
+                <option value="dog">Собака</option>
+            </select>
+
+            <label>Вес (кг):</label>
+            <input type="number" id="weight" step="0.1" value="4.0">
+
+            <label>Препарат:</label>
+            <select id="drug" onchange="updateDrugOptions()">
+                <!-- Options will be populated via JS -->
+            </select>
+
+            <div id="dose-slider-container" style="display: none;">
+                <label>Доза: <span id="dose-val">0</span></label>
+                <input type="range" id="dose-slider"
+                    oninput="document.getElementById('dose-val').innerText = this.value">
+            </div>
+
+            <div id="conc-container" style="display: none;">
+                <label>Концентрация в 1 мл:</label>
+                <select id="conc-select"></select>
+            </div>
+
+            <label>Количество приемов в сутки:</label>
+            <input type="number" id="injections" value="1" min="1">
+
+            <button onclick="calculateInjection()">Рассчитать дозу</button>
+
+            <div class="result" id="injection-result"></div>
+        </div>
+
+        <!-- Infusion tab -->
+        <div id="inf" class="tab-content">
+            <label>Вид животного:</label>
+            <select id="inf_species">
+                <option value="cat">Кошка (2-10 мкг/кг/мин)</option>
+                <option value="dog">Собака (1-5 мкг/кг/мин)</option>
+            </select>
+
+            <label>Вес (кг):</label>
+            <input type="number" id="inf_weight" step="0.1" value="12.0">
+
+            <button onclick="calculateInfusion()">Рассчитать скорость</button>
+
+            <div class="result" id="infusion-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Drug database
+        const drugs = {
+            "Транексам": { min: 10, max: 15, unit: 'мг', conc: 50 },
+            "Аминокапроновая кислота": { min: 100, max: 100, unit: 'мг', conc: 50 },
+            "Gs сухая форма": { min: 8, max: 15, unit: 'мг', conc: [10, 20, 30] },
+            "Атропин": { min: 0.025, max: 0.025, unit: 'мг', conc: 1 },
+            "Адреналин": { min: 20, max: 20, unit: 'мкг', conc: 1 },
+            "Кордиамин": { min: 0.025, max: 0.04, unit: 'мл', conc: null },
+            "Димедрол (кошки)": { min: 0.025, max: 0.025, unit: 'мл', conc: null },
+            "Димедрол (собаки)": { min: 0.05, max: 0.05, unit: 'мл', conc: null },
+            "Преднизолон (2мг/кг)": { min: 2, max: 2, unit: 'мг', conc: 30 },
+            "Преднизолон (4мг/кг)": { min: 4, max: 4, unit: 'мг', conc: 30 },
+            "Пиро-стоп": { min: 0.25, max: 0.25, unit: 'мл', conc: null },
+            "Метронидазол": { min: 6.25, max: 6.25, unit: 'мг', conc: 5 },
+            "Азитромицин": { min: 8, max: 8, unit: 'мг', conc: 80 },
+            "Цефтриаксон": { min: 50, max: 50, unit: 'мг', conc: 200 },
+            "Трамадол (кошки)": { min: 2, max: 4, unit: 'мг', conc: 50 },
+            "Трамадол (собаки)": { min: 2, max: 5, unit: 'мг', conc: 50 },
+            "Пропофол": { min: 6, max: 8, unit: 'мг', conc: 10 },
+            "Реамберин": { min: 6, max: 8, unit: 'мл', conc: null },
+            "Gs влажная форма": { min: 5, max: 15, unit: 'мг', conc: [10, 20, 30] },
+            "Gs офтальмологическая": { min: 10, max: 20, unit: 'мг', conc: [10, 20, 30] },
+            "Gs неврологическая": { min: 12, max: 20, unit: 'мг', conc: [10, 20, 30] },
+            "Ронколейкин": { min: 12000, max: 12000, unit: 'МЕ', conc: [100000, 200000] },
+            "Адеметионин": { min: 20, max: 20, unit: 'мг', conc: 80 }
+        };
+
+        // Fill the drug select list
+        const drugSelect = document.getElementById('drug');
+        for (const key in drugs) {
+            let opt = document.createElement('option');
+            opt.value = key;
+            opt.innerHTML = key;
+            drugSelect.appendChild(opt);
+        }
+
+        // Tab switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Update slider and concentration when on drug selection
+        function updateDrugOptions() {
+            const drugKey = document.getElementById('drug').value;
+            const data = drugs[drugKey];
+
+            const sliderContainer = document.getElementById('dose-slider-container');
+            const slider = document.getElementById('dose-slider');
+            const doseVal = document.getElementById('dose-val');
+            const concContainer = document.getElementById('conc-container');
+            const concSelect = document.getElementById('conc-select');
+
+            // Dose setup
+            if (data.min !== data.max) {
+                sliderContainer.style.display = 'block';
+                slider.min = data.min;
+                slider.max = data.max;
+                slider.step = data.min < 1 ? 0.025 : (data.min < 100 ? 0.5 : 1000); // Шаг для удобства
+                slider.value = data.min;
+                doseVal.innerText = data.min;
+            } else {
+                sliderContainer.style.display = 'none';
+            }
+
+            // Conc setup
+            concSelect.innerHTML = '';
+            if (Array.isArray(data.conc)) {
+                concContainer.style.display = 'block';
+                data.conc.forEach(c => {
+                    let opt = document.createElement('option');
+                    opt.value = c;
+                    opt.innerHTML = c + ' ' + data.unit + '/мл';
+                    concSelect.appendChild(opt);
+                });
+            } else {
+                concContainer.style.display = 'none';
+            }
+        }
+
+        function calculateInjection() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const drugKey = document.getElementById('drug').value;
+            const data = drugs[drugKey];
+            const injections = parseInt(document.getElementById('injections').value);
+
+            let selectedDose = data.min;
+            if (data.min !== data.max) {
+                selectedDose = parseFloat(document.getElementById('dose-slider').value);
+            }
+
+            let selectedConc = data.conc;
+            if (Array.isArray(data.conc)) {
+                selectedConc = parseFloat(document.getElementById('conc-select').value);
+            }
+
+            if (!weight || weight <= 0) { alert("Введите корректный вес!"); return; }
+
+            let dose_ml = 0;
+            let total_mg = null;
+
+            if (data.unit === 'мг') {
+                dose_ml = (weight * selectedDose) / selectedConc;
+                total_mg = weight * selectedDose;
+            } else if (data.unit === 'мкг') {
+                dose_ml = (weight * (selectedDose / 1000)) / selectedConc;
+                total_mg = (weight * selectedDose) / 1000;
+            } else if (data.unit === 'МЕ') {
+                dose_ml = (weight * selectedDose) / selectedConc;
+            } else if (data.unit === 'мл') {
+                dose_ml = weight * selectedDose;
+            }
+
+            const singleDose = dose_ml / injections;
+            const singleMg = total_mg !== null ? (total_mg / injections) : null;
+
+            const resultDiv = document.getElementById('injection-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<strong>Результат:</strong><br>
+                                   Разовая доза: <b>${singleDose.toFixed(2)} мл</b><br>
+                                   ${singleMg !== null ? `Это соответствует <b>${singleMg.toFixed(2)} мг</b>.<br>` : ''}
+                                   (При ${injections} приеме(ах) в сутки)`;
+        }
+
+        function calculateInfusion() {
+            const species = document.getElementById('inf_species').value;
+            const weight = parseFloat(document.getElementById('inf_weight').value);
+
+            if (!weight || weight <= 0) { alert("Введите корректный вес!"); return; }
+
+            let minRate = species === 'cat' ? 2 : 1;
+            let maxRate = species === 'cat' ? 10 : 5;
+
+            const min_mcg = weight * minRate;
+            const max_mcg = weight * maxRate;
+            const min_ml = min_mcg / 20000;
+            const max_ml = max_mcg / 20000;
+
+            const resultDiv = document.getElementById('infusion-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<strong>Результат:</strong><br>
+                                   Скорость поступления: <b>${min_mcg.toFixed(1)} – ${max_mcg.toFixed(1)} мкг/мин</b><br>
+                                   <div class="info">В миллилитрах (из ампулы 20 мг/мл): <b>${min_ml.toFixed(4)} – ${max_ml.toFixed(4)} мл/мин</b></div>`;
+        }
+
+        // Initialize on load
+        updateDrugOptions();
+    </script>
+</body>
+
+</html>
