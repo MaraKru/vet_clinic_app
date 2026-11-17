@@ -33,7 +33,7 @@ The clinic's veterinarians have already tested the project and are actively usin
 
 
 
-### Quick Start
+## Quick Start
 
 Use the live app:
 [Open Vet Dose Calculator](https://vetclinicapp-jnw4kndat3zgfbdxvmg7qr.streamlit.app/)
@@ -69,7 +69,7 @@ I decided not to include the clinic's real data here, as this repository is publ
 
 
 
-### Trade-offs & Challenges
+## Trade-offs & Challenges
 
 Q: **Why didn't you use a cloud database (e.g., Neon or Supabase)?**
 
