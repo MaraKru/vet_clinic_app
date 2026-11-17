@@ -8,7 +8,7 @@
 - [Screenshots](#screenshots)
 - [What I Did](#what-i-did)
 - [About the Clinic](#about-the-clinic)
-- [Trade-offs & Challenges](#trade-offs--сhallenges)
+- [Trade-offs & Challenges](#trade-offs--challenges)
 
 ### About the Project
 
