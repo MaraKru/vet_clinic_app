@@ -45,14 +45,11 @@ If you **don't have internet access**, download the offline_version/offline_calc
 
 ### Screenshots
 
-| Data Input | Calculation | Patient History |
-| :---: | :---: | :---: |
-| ![Data Input](photo/photo_1.jpg) | ![Calculation](photo/photo_2.jpg) | ![History](photo/photo_3.jpg) |
+| Data Input | Calculation | Patient History | Offline Version | 
+| :---: | :---: | :---: | :---: |
+| ![Data Input](photo/photo_1.jpg) | ![Calculation](photo/photo_2.jpg) | ![History](photo/photo_3.jpg) | ![Offline Version](photo/photo_4.jpg) |
 
 The user enters the pet's data (Fig. 1) - name, species (cat/dog), weight, and selects the drug. The program displays the dosage if it is fixed, or suggests selecting a range if it varies. Next (Fig. 2), the user specifies the number of doses per day, and the app calculates the single dose and prompts to save it to the patient's chart. There is a dedicated block for infusion calculations. In the "Patients" tab (Fig. 3), users can export the data to Excel or clear the database.
-
-*Offline version:*
-![Offline version](photo/photo_4.jpg)
 
 
 
